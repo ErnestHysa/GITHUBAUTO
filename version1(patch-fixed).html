@@ -1,0 +1,974 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>GitHub Batch Upload Tool with AI Documentation</title>
+    <style>
+        /* ... CSS STYLES (UNCHANGED) ... */
+        * {
+            box-sizing: border-box;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+
+        body {
+            background-color: #f6f8fa;
+            margin: 0;
+            padding: 20px;
+            color: #24292e;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            background-color: white;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+            padding: 30px;
+        }
+
+        h1 {
+            color: #0366d6;
+            text-align: center;
+            margin-bottom: 30px;
+            border-bottom: 2px solid #e1e4e8;
+            padding-bottom: 10px;
+        }
+
+        .card {
+            background-color: #f1f8ff;
+            border: 1px solid #d0d7de;
+            border-radius: 6px;
+            padding: 20px;
+            margin-bottom: 25px;
+        }
+
+        .card-title {
+            font-weight: bold;
+            color: #0366d6;
+            margin-bottom: 15px;
+            font-size: 18px;
+            border-bottom: 1px dashed #c0d7ef;
+            padding-bottom: 8px;
+            display: flex;
+            align-items: center;
+        }
+
+        .card-title-emoji {
+            margin-right: 10px;
+            font-size: 24px;
+        }
+
+        .form-group {
+            margin-bottom: 15px;
+        }
+
+        label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: 500;
+        }
+
+        input[type="text"], input[type="password"], textarea, select {
+            width: 100%;
+            padding: 10px;
+            border: 1px solid #d0d7de;
+            border-radius: 4px;
+            font-size: 14px;
+        }
+
+        input:focus, textarea:focus, select:focus {
+            outline: none;
+            border-color: #0366d6;
+            box-shadow: 0 0 0 3px rgba(3, 102, 214, 0.1);
+        }
+
+        .file-list, .preview-list {
+            margin-top: 15px;
+            max-height: 250px;
+            overflow-y: auto;
+            border: 1px solid #d0d7de;
+            border-radius: 4px;
+            padding: 10px;
+        }
+
+        .file-item, .preview-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 8px;
+            border-bottom: 1px solid #e1e4e8;
+        }
+
+        .file-item:last-child, .preview-item:last-child {
+            border-bottom: none;
+        }
+
+        .remove-file {
+            background-color: #d73a49;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            padding: 4px 8px;
+            cursor: pointer;
+        }
+
+        .remove-file:hover {
+            background-color: #cb2431;
+        }
+
+        .button-group {
+            display: flex;
+            gap: 10px;
+            margin-top: 20px;
+        }
+
+        .btn {
+            background-color: #2c974b;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            padding: 10px 20px;
+            font-size: 14px;
+            cursor: pointer;
+            transition: background-color 0.2s;
+            flex-grow: 1;
+        }
+
+        .btn:hover {
+            background-color: #268541;
+        }
+
+        .btn:disabled {
+            background-color: #6c757d;
+            cursor: not-allowed;
+        }
+
+        .btn-secondary {
+            background-color: #6c757d;
+        }
+
+        .btn-secondary:hover {
+            background-color: #5a6268;
+        }
+
+        .btn-primary {
+            background-color: #0366d6;
+        }
+
+        .btn-primary:hover {
+            background-color: #0256cc;
+        }
+
+        .alert {
+            padding: 10px;
+            margin-bottom: 15px;
+            border-radius: 4px;
+            font-size: 14px;
+        }
+
+        .alert-info {
+            background-color: #d1ecf1;
+            color: #0c5460;
+            border: 1px solid #bee5eb;
+        }
+
+        .alert-success {
+            background-color: #d4edda;
+            color: #155724;
+            border: 1px solid #c3e6cb;
+        }
+
+        .alert-danger {
+            background-color: #f8d7da;
+            color: #721c24;
+            border: 1px solid #f5c6cb;
+        }
+
+        .preview-content {
+            background-color: #f6f8fa;
+            border: 1px solid #e1e4e8;
+            padding: 15px;
+            border-radius: 4px;
+            white-space: pre-wrap;
+            font-family: monospace;
+            max-height: 300px;
+            overflow-y: auto;
+        }
+
+        .progress-bar-container {
+            height: 20px;
+            background-color: #e1e4e8;
+            border-radius: 4px;
+            margin-top: 10px;
+            overflow: hidden;
+            display: none;
+        }
+
+        .progress-bar {
+            height: 100%;
+            width: 0%;
+            background-color: #28a745;
+            text-align: center;
+            line-height: 20px;
+            color: white;
+            transition: width 0.4s;
+        }
+
+        .loading {
+            display: inline-block;
+            width: 15px;
+            height: 15px;
+            border: 2px solid #f3f3f3;
+            border-top: 2px solid white;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            margin-right: 5px;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        .repo-file-item {
+            margin-top: 10px;
+            padding: 8px;
+            border: 1px solid #e1e4e8;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+
+        .repo-file-item:hover {
+            background-color: #f0f3f6;
+        }
+
+        .repo-file-item.active {
+            background-color: #e6f3ff;
+            border-color: #0366d6;
+        }
+
+        .repo-file-item strong {
+            display: block;
+            margin-bottom: 5px;
+        }
+
+        .repo-file-item small {
+            color: #586069;
+            font-style: italic;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>GitHub Batch Upload Tool with AI Documentation</h1>
+
+        <div id="status-alerts"></div>
+
+        <div class="card" id="config-card">
+            <div class="card-title"><span class="card-title-emoji"1️⃣</span> Step 1: Configuration & Connection</div>
+            <div class="alert alert-info">Enter your API keys, preferred AI model, and the **existing** target GitHub repository details.</div>
+
+            <div class="form-group">
+                <label for="github-token">GitHub Personal Access Token:</label>
+                <input type="password" id="github-token" placeholder="Enter your GitHub PAT (repo scope)">
+                <small>Required for uploading files.</small>
+            </div>
+            <div class="form-group">
+                <label for="openrouter-api-key">OpenRouter API Key:</label>
+                <input type="password" id="openrouter-api-key" placeholder="Enter your OpenRouter API key">
+                <small>Required for AI documentation generation.</small>
+            </div>
+            
+            <div class="form-group">
+                <label for="openrouter-model-id">OpenRouter Model ID:</label>
+                <input type="text" id="openrouter-model-id" value="mistralai/mistral-7b-instruct:free" placeholder="e.g., mistralai/mistral-7b-instruct">
+                <small>Specify the AI model you prefer for documentation (must be a valid OpenRouter ID).</small>
+            </div>
+            <hr>
+            <div class="form-group">
+                <label for="repo-url">Repository Clone URL (HTTPS or SSH):</label>
+                <input type="text" id="repo-url" placeholder="https://github.com/user/repo.git (must be an existing repo)">
+                <small>The URL of the **existing** repository to push files to.</small>
+            </div>
+            <div class="form-group">
+                <label for="target-branch">Target Branch:</label>
+                <input type="text" id="target-branch" value="main" placeholder="e.g., main or dev">
+            </div>
+            <div class="form-group">
+                <label for="commit-message">Commit Message:</label>
+                <input type="text" id="commit-message" value="Batch upload original files and AI-generated documentation" placeholder="Describe the commit">
+            </div>
+
+            <div class="button-group">
+                <button class="btn btn-secondary" id="test-connection-btn">Test Connection</button>
+                <button class="btn btn-primary" id="save-config-btn">Save Configuration</button>
+            </div>
+        </div>
+
+        <div class="card hidden" id="upload-card">
+            <div class="card-title"><span class="card-title-emoji">2️⃣</span> Step 2: Upload Files to App Memory</div>
+            <div class="alert alert-info">Select the source files you want to upload. The content of the main file will be sent to the AI.</div>
+
+            <div class="form-group">
+                <label for="file-input">Select Files:</label>
+                <input type="file" id="file-input" multiple>
+            </div>
+
+            <div id="file-list" class="file-list hidden">
+                <div class="card-title" style="font-size: 16px; border-bottom: none;">Selected Files:</div>
+                <div id="file-items"></div>
+            </div>
+
+            <div class="button-group">
+                <button class="btn btn-primary" id="upload-files-btn">Upload Files to App</button>
+            </div>
+        </div>
+
+        <div class="card hidden" id="ai-card">
+            <div class="card-title"><span class="card-title-emoji">3️⃣</span> Step 3: AI Documentation Generation</div>
+            <div class="alert alert-info">Provide context for the AI to generate high-quality documentation.</div>
+
+            <div class="form-group">
+                <label for="project-purpose">Project Purpose (What does it do?):</label>
+                <input type="text" id="project-purpose" placeholder="e.g., A Python script for automating data reports.">
+            </div>
+            <div class="form-group">
+                <label for="target-audience">Target Audience (Who is the documentation for?):</label>
+                <input type="text" id="target-audience" placeholder="e.g., Developers, end-users, or contributors.">
+            </div>
+            <div class="form-group">
+                <label for="tech-stack">Tech Stack (Languages/Frameworks):</label>
+                <input type="text" id="tech-stack" placeholder="e.g., Python, Flask, React, JavaScript.">
+            </div>
+            <div class="form-group">
+                <label for="custom-prompt">Custom Instructions/Prompt (Optional):</label>
+                <textarea id="custom-prompt" placeholder="Add any specific requirements for README.md, CONTRIBUTING.md, etc."></textarea>
+            </div>
+
+            <div class="progress-bar-container" id="ai-progress-container">
+                <div class="progress-bar" id="ai-progress-bar">0%</div>
+            </div>
+
+            <div class="button-group">
+                <button class="btn btn-primary" id="generate-docs-btn">Generate Documentation</button>
+            </div>
+        </div>
+
+        <div class="card hidden" id="preview-card">
+            <div class="card-title"><span class="card-title-emoji">4️⃣</span> Step 4: Preview & Final GitHub Upload</div>
+            <div class="alert alert-info">Review the generated documentation and commit all files to GitHub.</div>
+
+            <div style="display: flex; gap: 20px;">
+                <div style="flex: 1;">
+                    <div class="card-title" style="font-size: 16px; border-bottom: none;">Repository Structure Preview</div>
+                    <div class="preview-list">
+                        <div style="font-weight: bold; margin-top: 10px;">Original Files:</div>
+                        <div id="original-files-preview"></div>
+                        <div style="font-weight: bold; margin-top: 20px;">Generated Documentation:</div>
+                        <div id="generated-docs-preview"></div>
+                    </div>
+                </div>
+
+                <div style="flex: 2;">
+                    <div class="card-title" style="font-size: 16px; border-bottom: none;">Content Preview (<span id="preview-filename">Select a file...</span>)</div>
+                    <div id="content-preview" class="preview-content">
+                        Select a file from the list to view its content.
+                    </div>
+                    <textarea id="content-edit-area" style="width: 100%; min-height: 300px; display: none; margin-top: 10px;" placeholder="Edit content here..."></textarea>
+                </div>
+            </div>
+
+            <div class="progress-bar-container" id="upload-progress-container">
+                <div class="progress-bar" id="upload-progress-bar">0%</div>
+            </div>
+
+            <div class="button-group">
+                <button class="btn btn-secondary" id="edit-content-btn">Edit Selected File</button>
+                <button class="btn btn-primary" id="upload-to-github-btn">Upload All to GitHub</button>
+            </div>
+        </div>
+
+        <div class="card hidden" id="log-card">
+            <div class="card-title"><span class="card-title-emoji">📜</span> Status Log</div>
+            <div id="log-content" class="preview-content" style="max-height: 150px;"></div>
+        </div>
+    </div>
+
+    <script>
+        // DOM Elements
+        const statusAlerts = document.getElementById('status-alerts');
+        const configCard = document.getElementById('config-card');
+        const uploadCard = document.getElementById('upload-card');
+        const aiCard = document.getElementById('ai-card');
+        const previewCard = document.getElementById('preview-card');
+        const logCard = document.getElementById('log-card');
+        const logContent = document.getElementById('log-content');
+
+        const fileInput = document.getElementById('file-input');
+        const fileItems = document.getElementById('file-items');
+        const fileListContainer = document.getElementById('file-list');
+
+        const originalFilesPreview = document.getElementById('original-files-preview');
+        const generatedDocsPreview = document.getElementById('generated-docs-preview');
+        const contentPreview = document.getElementById('content-preview');
+        const contentEditArea = document.getElementById('content-edit-area');
+        const previewFilename = document.getElementById('preview-filename');
+
+        const saveConfigBtn = document.getElementById('save-config-btn');
+        const uploadFilesBtn = document.getElementById('upload-files-btn');
+        const generateDocsBtn = document.getElementById('generate-docs-btn');
+        const uploadToGithubBtn = document.getElementById('upload-to-github-btn');
+        const editContentBtn = document.getElementById('edit-content-btn');
+        const testConnectionBtn = document.getElementById('test-connection-btn');
+
+        const aiProgressBar = document.getElementById('ai-progress-bar');
+        const aiProgressContainer = document.getElementById('ai-progress-container');
+        const uploadProgressBar = document.getElementById('upload-progress-bar');
+        const uploadProgressContainer = document.getElementById('upload-progress-container');
+
+        // Global State
+        let appConfig = {};
+        let uploadedFiles = []; // Array of { name: 'file.txt', content: 'Base64 string', size: 1024 }
+        let generatedDocs = {}; // Object of { 'README.md': 'Markdown content', 'LICENSE': 'License text' }
+        let currentPreviewFile = null;
+
+        // --- Utility Functions ---
+
+        function logMessage(message, type = 'info') {
+            const timestamp = new Date().toLocaleTimeString();
+            logContent.innerHTML += `<div style="color: ${type === 'error' ? 'red' : (type === 'success' ? 'green' : '#0366d6')};">[${timestamp}] ${message}</div>`;
+            logContent.scrollTop = logContent.scrollHeight;
+            logCard.classList.remove('hidden');
+        }
+
+        function showAlert(message, type = 'info') {
+            const alertElement = document.createElement('div');
+            alertElement.className = `alert alert-${type}`;
+            alertElement.innerHTML = message;
+            statusAlerts.appendChild(alertElement);
+
+            // Auto-remove non-error alerts after 5 seconds
+            if (type !== 'danger') {
+                setTimeout(() => {
+                    if (alertElement.parentNode) {
+                        alertElement.parentNode.removeChild(alertElement);
+                    }
+                }, 5000);
+            }
+        }
+
+        function updateProgress(barElement, containerElement, percentage, message = '') {
+            barElement.style.width = percentage + '%';
+            barElement.textContent = percentage + '% ' + message;
+            containerElement.style.display = 'block';
+        }
+
+        function hideElement(element) { element.classList.add('hidden'); }
+        function showElement(element) { element.classList.remove('hidden'); }
+        function disableButton(button, text) { button.disabled = true; button.innerHTML = text ? `<div class="loading"></div> ${text}` : '<div class="loading"></div> Processing...'; }
+        function enableButton(button, text) { button.disabled = false; button.innerHTML = text; }
+
+        function formatFileSize(bytes) {
+            if (bytes === 0) return '0 Bytes';
+            const k = 1024;
+            const sizes = ['Bytes', 'KB', 'MB', 'GB'];
+            const i = Math.floor(Math.log(bytes) / Math.log(k));
+            return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i] + (i === 0 ? '' : ' (' + Math.round(bytes / 1024) + 'KB)');
+        }
+
+        // --- Core Functions ---
+
+        async function readFileAsBase64(file) {
+            return new Promise((resolve, reject) => {
+                const reader = new FileReader();
+                reader.onload = () => {
+                    // The result is a data URL (e.g., "data:text/plain;base64,...")
+                    resolve(reader.result);
+                };
+                reader.onerror = () => {
+                    reject(new Error(`Failed to read file: ${file.name}`));
+                };
+                // Read as Data URL to get the Base64 content
+                reader.readAsDataURL(file);
+            });
+        }
+
+        function updateFileList() {
+            if (uploadedFiles.length === 0) {
+                hideElement(fileListContainer);
+                return;
+            }
+
+            showElement(fileListContainer);
+            fileItems.innerHTML = '';
+
+            uploadedFiles.forEach((file, index) => {
+                const fileItem = document.createElement('div');
+                fileItem.className = 'file-item';
+                fileItem.innerHTML = `
+                    <div>
+                        <strong>${file.name}</strong>
+                        <small>(${formatFileSize(file.size)})</small>
+                    </div>
+                    <button class="remove-file" data-index="${index}">Remove</button>
+                `;
+                fileItems.appendChild(fileItem);
+            });
+
+            document.querySelectorAll('.remove-file').forEach(button => {
+                button.addEventListener('click', (e) => {
+                    const index = parseInt(e.target.dataset.index);
+                    uploadedFiles.splice(index, 1);
+                    updateFileList();
+                });
+            });
+        }
+
+        function updatePreviewList() {
+            originalFilesPreview.innerHTML = '';
+            generatedDocsPreview.innerHTML = '';
+
+            // 1. Original Files
+            uploadedFiles.forEach(file => {
+                const item = document.createElement('div');
+                item.className = 'repo-file-item original-file';
+                item.dataset.filename = file.name;
+                item.innerHTML = `
+                    <strong>${file.name}</strong>
+                    <small>Original File (${formatFileSize(file.size)})</small>
+                `;
+                originalFilesPreview.appendChild(item);
+            });
+
+            // 2. Generated Docs
+            Object.keys(generatedDocs).forEach(filename => {
+                const content = generatedDocs[filename];
+                const item = document.createElement('div');
+                item.className = 'repo-file-item generated-doc';
+                item.dataset.filename = filename;
+                item.innerHTML = `
+                    <strong>${filename}</strong>
+                    <small>AI-Generated (${(content.length / 1024).toFixed(2)} KB)</small>
+                `;
+                generatedDocsPreview.appendChild(item);
+            });
+
+            document.querySelectorAll('.repo-file-item').forEach(item => {
+                item.addEventListener('click', handlePreviewClick);
+            });
+            
+            // Auto-select the first generated file (e.g., README.md)
+            const readme = generatedDocsPreview.querySelector('[data-filename="README.md"]');
+            if (readme) {
+                readme.click();
+            } else if (uploadedFiles.length > 0) {
+                document.querySelector('.repo-file-item.original-file').click();
+            }
+        }
+
+        function handlePreviewClick(e) {
+            document.querySelectorAll('.repo-file-item').forEach(item => item.classList.remove('active'));
+            const selectedItem = e.currentTarget;
+            selectedItem.classList.add('active');
+
+            const filename = selectedItem.dataset.filename;
+            previewFilename.textContent = filename;
+            currentPreviewFile = filename;
+
+            let content;
+            if (selectedItem.classList.contains('original-file')) {
+                // Find content in uploadedFiles
+                const file = uploadedFiles.find(f => f.name === filename);
+                // Decode Base64 part only
+                content = file ? decodeURIComponent(escape(atob(file.content.split(',')[1]))) : 'File content not found or cannot be decoded.';
+            } else if (selectedItem.classList.contains('generated-doc')) {
+                // Find content in generatedDocs
+                content = generatedDocs[filename] || 'Generated content not found.';
+            }
+
+            // Show static preview and hide editor
+            contentPreview.textContent = content;
+            showElement(contentPreview);
+            hideElement(contentEditArea);
+            enableButton(editContentBtn, 'Edit Selected File');
+        }
+
+        // --- API Call Functions ---
+
+        async function callOpenRouterAPI(apiKey, modelId, prompt) {
+            const response = await fetch('https://openrouter.ai/api/v1/chat/completions', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${apiKey}`,
+                    'HTTP-Referer': window.location.href,
+                    'X-Title': 'GitHub Batch Uploader'
+                },
+                body: JSON.stringify({
+                    // FIX 3: Use the user-specified model ID
+                    model: modelId, 
+                    messages: [
+                        {
+                            role: 'user',
+                            content: prompt
+                        }
+                    ],
+                    max_tokens: 4000,
+                    temperature: 0.7,
+                    response_format: { type: "json_object" } // Request JSON object output
+                })
+            });
+            
+            if (!response.ok) {
+                const errorBody = await response.json();
+                throw new Error(`OpenRouter API failed with status: ${response.status} - ${errorBody.error ? errorBody.error.message : response.statusText}`);
+            }
+
+            // FIX: Read as text, clean, then parse to handle potential non-JSON prefix/suffix from AI
+            const rawText = await response.text();
+            
+            // Find the first '{' and the last '}' to isolate the pure JSON object.
+            const start = rawText.indexOf('{');
+            const end = rawText.lastIndexOf('}');
+            
+            if (start === -1 || end === -1) {
+                throw new Error("AI output did not contain a valid JSON object. Check model response.");
+            }
+            
+            // Extract the clean JSON string
+            const cleanJsonString = rawText.substring(start, end + 1);
+
+            try {
+                const aiResponse = JSON.parse(cleanJsonString);
+                return aiResponse;
+            } catch (e) {
+                console.error("Cleaned JSON String:", cleanJsonString);
+                throw new Error(`Failed to parse AI JSON response after cleaning: ${e.message}`);
+            }
+        }
+
+        async function getGitHubOwnerAndRepo(token, repoUrl) {
+            const match = repoUrl.match(/github\.com\/([^/]+)\/([^/]+)\.git/);
+            if (!match) {
+                throw new Error('Invalid GitHub Repository URL format. Expected format: https://github.com/owner/repo.git');
+            }
+            const owner = match[1];
+            const repo = match[2];
+
+            // Verify repo exists and token has access
+            const branch = document.getElementById('target-branch').value;
+            const response = await fetch(`https://api.github.com/repos/${owner}/${repo}/branches/${branch}`, {
+                headers: {
+                    'Authorization': `token ${token}`,
+                    'Accept': 'application/vnd.github.v3+json'
+                }
+            });
+
+            if (!response.ok) {
+                let errorMessage = `GitHub Validation failed: Repository **${owner}/${repo}** not found or branch **${branch}** not accessible.`;
+                if (response.status === 404) {
+                     errorMessage += ` **Action Required:** Please create the repository on GitHub manually before proceeding.`;
+                }
+                throw new Error(errorMessage);
+            }
+
+            return { owner, repo };
+        }
+
+        // --- Event Handlers ---
+
+        saveConfigBtn.addEventListener('click', () => {
+            const githubToken = document.getElementById('github-token').value.trim();
+            const openrouterApiKey = document.getElementById('openrouter-api-key').value.trim();
+            // FIX 1: Read new model ID
+            const openrouterModelId = document.getElementById('openrouter-model-id').value.trim(); 
+            const repoUrl = document.getElementById('repo-url').value.trim();
+            const targetBranch = document.getElementById('target-branch').value.trim();
+            const commitMessage = document.getElementById('commit-message').value.trim();
+
+            if (!githubToken || !openrouterApiKey || !repoUrl || !targetBranch || !commitMessage || !openrouterModelId) {
+                showAlert('All configuration fields, including the AI Model ID, must be filled.', 'danger');
+                return;
+            }
+
+            // FIX 1: Update appConfig
+            appConfig = { githubToken, openrouterApiKey, openrouterModelId, repoUrl, targetBranch, commitMessage };
+            showAlert('Configuration saved successfully. Proceed to Step 2.', 'success');
+            logMessage('Configuration saved.');
+            showElement(uploadCard);
+        });
+
+        testConnectionBtn.addEventListener('click', async () => {
+            const githubToken = document.getElementById('github-token').value.trim();
+            const repoUrl = document.getElementById('repo-url').value.trim();
+
+            if (!githubToken || !repoUrl) {
+                showAlert('GitHub Token and Repository URL are required to test the connection.', 'danger');
+                return;
+            }
+
+            disableButton(testConnectionBtn, 'Testing...');
+            try {
+                const { owner, repo } = await getGitHubOwnerAndRepo(githubToken, repoUrl);
+                showAlert(`Connection successful! Repository **${owner}/${repo}** is accessible.`, 'success');
+                logMessage(`GitHub connection test successful for ${owner}/${repo}.`);
+            } catch (error) {
+                showAlert(`Connection Test Failed: ${error.message}`, 'danger');
+                logMessage(`Connection Test Failed: ${error.message}`, 'error');
+            } finally {
+                enableButton(testConnectionBtn, 'Test Connection');
+            }
+        });
+
+        fileInput.addEventListener('change', (e) => {
+            const files = Array.from(e.target.files);
+            files.forEach(file => {
+                if (!uploadedFiles.find(f => f.name === file.name && f.size === file.size)) {
+                    // Temporarily store File objects. Content is read upon "Upload Files to App" click.
+                    uploadedFiles.push(file); 
+                }
+            });
+            updateFileList();
+        });
+
+        uploadFilesBtn.addEventListener('click', async () => {
+            if (uploadedFiles.length === 0) {
+                showAlert('Please select files first.', 'danger');
+                return;
+            }
+
+            disableButton(uploadFilesBtn, 'Loading Files...');
+            const filesToProcess = [...uploadedFiles];
+            uploadedFiles = []; // Clear to re-populate with Base64 content
+
+            try {
+                for (let i = 0; i < filesToProcess.length; i++) {
+                    const file = filesToProcess[i];
+                    logMessage(`Processing file: ${file.name}`);
+                    const content = await readFileAsBase64(file);
+                    
+                    uploadedFiles.push({
+                        name: file.name,
+                        content: content,
+                        size: file.size,
+                    });
+                    logMessage(`✓ File processed: ${file.name}`);
+                }
+
+                showAlert(`Successfully loaded ${uploadedFiles.length} files into app memory. Proceed to Step 3.`, 'success');
+                logMessage('All files processed and ready for AI generation.');
+                showElement(aiCard);
+            } catch (error) {
+                showAlert(`Error uploading files: ${error.message}`, 'danger');
+                logMessage(`Error processing files: ${error.message}`, 'error');
+            } finally {
+                updateFileList();
+                enableButton(uploadFilesBtn, 'Upload Files to App');
+            }
+        });
+
+        generateDocsBtn.addEventListener('click', async () => {
+            if (!appConfig.openrouterApiKey || !appConfig.openrouterModelId) {
+                showAlert('Please save the configuration (Step 1) including the API Key and Model ID first.', 'danger');
+                return;
+            }
+            if (uploadedFiles.length === 0) {
+                showAlert('Please upload files to app memory (Step 2) first.', 'danger');
+                return;
+            }
+
+            disableButton(generateDocsBtn, 'Generating Documentation');
+            updateProgress(aiProgressBar, aiProgressContainer, 0, 'Starting...');
+
+            try {
+                // 1. Prepare file context and prompt
+                
+                // FIX 2: Identify the primary file (largest) and extract its decoded content
+                const primaryFile = uploadedFiles.reduce((max, file) => (file.size > max.size ? file : max), { size: -1 });
+                const primaryFileContent = decodeURIComponent(escape(atob(primaryFile.content.split(',')[1]))); // Decode Base64 to string
+                
+                // Truncate content if it's too large (AI models have context limits)
+                const MAX_CONTENT_LENGTH = 15000; 
+                const contextualContent = primaryFileContent.substring(0, MAX_CONTENT_LENGTH);
+                const truncatedMessage = primaryFileContent.length > MAX_CONTENT_LENGTH ? `(Content was truncated to ${MAX_CONTENT_LENGTH} characters for the AI model.)` : '';
+
+                const fileContextList = uploadedFiles.map(f => `- ${f.name} (${formatFileSize(f.size)})`).join('\n');
+                const projectPurpose = document.getElementById('project-purpose').value.trim();
+                const targetAudience = document.getElementById('target-audience').value.trim();
+                const techStack = document.getElementById('tech-stack').value.trim();
+                const customPrompt = document.getElementById('custom-prompt').value.trim();
+
+                const aiPrompt = `
+                    You are an expert GitHub documentation generator. Your task is to generate five standard repository files: README.md, CONTRIBUTING.md, LICENSE, .gitignore, and CHANGELOG.md.
+                    
+                    The repository will contain the following files:
+                    ${fileContextList}
+                    
+                    Project details:
+                    - PURPOSE: ${projectPurpose}
+                    - TECH STACK: ${techStack}
+                    - TARGET AUDIENCE: ${targetAudience}
+                    
+                    Additional instructions: ${customPrompt || 'Be comprehensive, professional, and directly relevant to the file list and project details.'}
+                    
+                    **CRITICAL CONTEXT:** The primary file for this project is **${primaryFile.name}**. Analyze its full content provided below to write accurate, meaningful, and specific documentation. ${truncatedMessage}
+                    
+                    --- START PRIMARY FILE CONTENT: ${primaryFile.name} ---
+                    ${contextualContent}
+                    --- END PRIMARY FILE CONTENT ---
+
+                    **IMPORTANT:** You must respond **ONLY** with a single JSON object. Do not include any text, markdown formatting, or explanation outside of the JSON object.
+                    
+                    The JSON object must have the following structure, where the key is the filename and the value is the full content of that file (as a string):
+                    {
+                        "README.md": "...",
+                        "CONTRIBUTING.md": "...",
+                        "LICENSE": "...",
+                        ".gitignore": "...",
+                        "CHANGELOG.md": "..."
+                    }
+                `;
+                
+                logMessage(`Sending request to OpenRouter API using model: **${appConfig.openrouterModelId}**...`);
+                updateProgress(aiProgressBar, aiProgressContainer, 20, 'API Request Sent');
+                
+                // 2. Call the fixed API function
+                const docResponse = await callOpenRouterAPI(appConfig.openrouterApiKey, appConfig.openrouterModelId, aiPrompt);
+                
+                logMessage('Documentation received. Processing files...');
+                updateProgress(aiProgressBar, aiProgressContainer, 70, 'Response Received');
+
+                // 3. Store results
+                generatedDocs = docResponse;
+
+                showAlert('Successfully generated documentation! Proceed to Step 4.', 'success');
+                logMessage('All documentation files generated successfully.');
+                updateProgress(aiProgressBar, aiProgressContainer, 100, 'Complete');
+                showElement(previewCard);
+                updatePreviewList();
+            } catch (error) {
+                showAlert(`Error generating documentation: ${error.message}`, 'danger');
+                logMessage(`Error generating documentation: ${error.message}`, 'error');
+                updateProgress(aiProgressBar, aiProgressContainer, 0, 'Failed');
+            } finally {
+                enableButton(generateDocsBtn, 'Generate Documentation');
+            }
+        });
+
+        editContentBtn.addEventListener('click', () => {
+            if (!currentPreviewFile) {
+                showAlert('Please select a file to edit.', 'danger');
+                return;
+            }
+
+            if (contentPreview.classList.contains('hidden')) { // We are in edit mode, so save
+                const newContent = contentEditArea.value;
+                const selectedItem = document.querySelector('.repo-file-item.active');
+
+                if (selectedItem.classList.contains('generated-doc')) {
+                    // Update generatedDocs object
+                    generatedDocs[currentPreviewFile] = newContent;
+                    showAlert(`Saved changes for **${currentPreviewFile}** (AI Document).`, 'success');
+                    logMessage(`Updated content for ${currentPreviewFile}.`);
+                } else {
+                    // Update uploadedFiles object (must re-encode to Base64)
+                    const fileIndex = uploadedFiles.findIndex(f => f.name === currentPreviewFile);
+                    if (fileIndex !== -1) {
+                        // Re-encode to Base64
+                        const base64Content = 'data:text/plain;base64,' + btoa(unescape(encodeURIComponent(newContent)));
+                        uploadedFiles[fileIndex].content = base64Content;
+                        showAlert(`Saved changes for **${currentPreviewFile}** (Original File).`, 'success');
+                        logMessage(`Updated content for ${currentPreviewFile}.`);
+                    }
+                }
+                
+                // Switch back to view mode
+                contentPreview.textContent = newContent;
+                showElement(contentPreview);
+                hideElement(contentEditArea);
+                enableButton(editContentBtn, 'Edit Selected File');
+            } else { // We are in view mode, switch to edit
+                const contentToEdit = contentPreview.textContent;
+                contentEditArea.value = contentToEdit;
+                hideElement(contentPreview);
+                showElement(contentEditArea);
+                enableButton(editContentBtn, 'Save Changes');
+            }
+        });
+
+        uploadToGithubBtn.addEventListener('click', async () => {
+            if (!appConfig.githubToken || !appConfig.repoUrl) {
+                showAlert('Please save the configuration (Step 1) first.', 'danger');
+                return;
+            }
+            if (uploadedFiles.length === 0 && Object.keys(generatedDocs).length === 0) {
+                showAlert('No files or documentation to upload.', 'danger');
+                return;
+            }
+
+            disableButton(uploadToGithubBtn, 'Uploading to GitHub...');
+            updateProgress(uploadProgressBar, uploadProgressContainer, 0, 'Starting...');
+
+            try {
+                const { owner, repo } = await getGitHubOwnerAndRepo(appConfig.githubToken, appConfig.repoUrl);
+                logMessage(`Target Repository: **${owner}/${repo}** on branch **${appConfig.targetBranch}**`);
+
+                const allFiles = [
+                    ...uploadedFiles.map(f => ({ name: f.name, content: f.content, type: 'original' })),
+                    ...Object.keys(generatedDocs).map(name => ({
+                        name: name,
+                        // Ensure generated docs content is also Base64 encoded for the GitHub API
+                        content: 'data:text/plain;base64,' + btoa(unescape(encodeURIComponent(generatedDocs[name]))),
+                        type: 'generated'
+                    }))
+                ];
+                
+                let successfulUploads = 0;
+                
+                for (let i = 0; i < allFiles.length; i++) {
+                    const file = allFiles[i];
+                    const filePath = file.name;
+                    // Get only the base64 part, removing the 'data:type/subtype;base64,' prefix
+                    const contentBase64 = file.content.split(',')[1]; 
+
+                    logMessage(`Uploading ${file.name}...`);
+                    
+                    // GitHub Content API (PUT /repos/{owner}/{repo}/contents/{path})
+                    const uploadResponse = await fetch(`https://api.github.com/repos/${owner}/${repo}/contents/${filePath}`, {
+                        method: 'PUT',
+                        headers: {
+                            'Authorization': `token ${appConfig.githubToken}`,
+                            'Accept': 'application/vnd.github.v3+json',
+                            'Content-Type': 'application/json'
+                        },
+                        body: JSON.stringify({
+                            message: appConfig.commitMessage,
+                            content: contentBase64,
+                            branch: appConfig.targetBranch
+                        })
+                    });
+
+                    if (!uploadResponse.ok) {
+                        const errorData = await uploadResponse.json();
+                        throw new Error(`Failed to upload ${file.name}: ${errorData.message}`);
+                    }
+                    
+                    successfulUploads++;
+                    logMessage(`✓ Successfully committed **${file.name}**`, 'success');
+                    updateProgress(uploadProgressBar, uploadProgressContainer, Math.round((successfulUploads / allFiles.length) * 100), `Uploaded ${successfulUploads}/${allFiles.length} files`);
+                }
+
+                showAlert(`All ${successfulUploads} files successfully uploaded to GitHub! View your repository.`, 'success');
+                logMessage('🎉 All files committed to GitHub!', 'success');
+            } catch (error) {
+                showAlert(`Final Upload Failed: ${error.message}`, 'danger');
+                logMessage(`Final Upload Failed: ${error.message}`, 'error');
+            } finally {
+                enableButton(uploadToGithubBtn, 'Upload All to GitHub');
+                updateProgress(uploadProgressBar, uploadProgressContainer, 100, 'Complete');
+            }
+        });
+    </script>
+</body>
+</html>
